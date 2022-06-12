@@ -1,0 +1,2 @@
+# virtual_concert_udp_streaming_server
+This is the implementation of UDP streaming server for the project MSP 21050: Virtual Concert in Metaverse (project website: https://wp.cs.hku.hk/2021/msp21050). This server can accept multiple audience clients' registrations and stream the performer's motion data to them. In the meantime, audiences can also send the interactions to the performers via the server.
