@@ -1,80 +1,133 @@
-#! /usr/bin/env python2.7
 from socket import *
-import thread
+import select
+import threading
 from time import sleep
 
-# config content
-host = '0.0.0.0'
-inport = 1234
-outport = 1235
-TTL = 20
-pktlen = 2048
-# end of config content
 
-# sockets
-insock = socket(AF_INET, SOCK_DGRAM)
-insock.bind((host, inport))
-outsock = socket(AF_INET, SOCK_DGRAM)
-outsock.bind((host, outport))
+class ForwardServer:
+    """
+    This class controls server.
+    This is a singleton class.
+    """
 
-# addresses pool
-_addrlist = {}
+    __species = None
+    __first_init = True
 
+    # UDP Networking
+    host = '0.0.0.0'
+    TTL = 20
+    pktLen = 2048
 
-def forward():
-    while True:
-        data, inaddr = insock.recvfrom(pktlen)
-        forwardlist(data)
-    insock.close()
-    outsock.close()
+    # Ports
+    inPort = 1234
+    outPort = 1235
 
+    # Sockets
+    inSock = socket(AF_INET, SOCK_DGRAM)
+    outSock = socket(AF_INET, SOCK_DGRAM)
 
-def access():
-    print "Starting Accepting Registration..."
-    while True:
-        data, accaddr = outsock.recvfrom(pktlen)
-        addAddrlist(accaddr)
+    # Threads
+    registrationThread = None
+    forwardThread = None
+    timerThread = None
 
+    # Flags
+    terminated = False
 
-def forwardlist(data):
-    for addr in _addrlist.keys():
-        outsock.sendto(data, addr)
+    # addresses pool
+    addrList = {}
 
+    def __new__(cls, *args, **kwargs):
+        if cls.__species is None:
+            cls.__species = object.__new__(cls)
+        return cls.__species
 
-def addAddrlist(addr):
-    if addr not in _addrlist.keys():
-        print "New Client Registered: ", addr
-    _addrlist[addr] = 0
+    def __init__(self, host='0.0.0.0', TTL=20, pktLen=2048, inPort=1234, outPort=1235):
+        if self.__first_init:
+            self.host = host
+            self.TTL = TTL
+            self.pktLen = pktLen
 
+            self.inPort = inPort
+            self.outPort = outPort
 
-def incTime():
-    global _addrlist
-    _addrlist = {k: v + 1 for k, v in _addrlist.iteritems()}
+            self.inSock = socket(AF_INET, SOCK_DGRAM)
+            self.inSock.bind((self.host, self.inPort))
 
+            self.outSock = socket(AF_INET, SOCK_DGRAM)
+            self.outSock.bind((self.host, self.outPort))
 
-def delTimeOut():
-    global _addrlist
-    new = {k: v for k, v in _addrlist.iteritems() if v <= TTL}
-    # stat timeout addrlist
-    diff = [k for k in _addrlist.keys() if k not in new.keys()]
-    if len(diff) != 0:
-        print "Client Timeout: ", diff
-    _addrlist = new
+            self.registrationThread = threading.Thread(target=self.AcceptRegistration)
+            self.forwardThread = threading.Thread(target=self.Forward)
+            self.timerThread = threading.Thread(target=self.Timer)
 
+            self.terminated = False
 
-def timer():
-    print "Starting Timer..."
-    while True:
-        sleep(1)
-        delTimeOut()
-        incTime()
+            self.addrList = {}
 
+            self.__class__.__first_init = False
 
-if __name__ == "__main__":
-    thread.start_new(access, ())
-    thread.start_new(timer, ())
-    print "Server Started..."
-    print "host: ", host
-    print "Data Receiving Port (inport): ", inport
-    print "Client Registering & Data Forwarding Port (outport): ", outport
-    forward()
+    def Start(self):
+        print("Starting Server...")
+        self.registrationThread.start()
+        self.forwardThread.start()
+        self.timerThread.start()
+        print("Server Started...")
+
+    def Forward(self):
+        print("Start Forwarding...\n", end='')
+        while not self.terminated:
+            ready = select.select([self.inSock], [], [], 1.0)
+            if ready[0]:
+                data, inAddr = self.inSock.recvfrom(self.pktLen)
+                for addr in self.addrList.keys():
+                    self.outSock.sendto(data, addr)
+        print("Forward Stopped....\n", end='')
+
+    def AcceptRegistration(self):
+        print("Start Accepting Client Registration...\n", end='')
+        while not self.terminated:
+            ready = select.select([self.outSock], [], [], 1.0)
+            if ready[0]:
+                data, clientAddr = self.outSock.recvfrom(self.pktLen)
+                self.AddAddrList(clientAddr)
+        print("Stop Accepting Client Registration...\n", end='')
+
+    def AddAddrList(self, addr):
+        if addr not in self.addrList.keys():
+            print("New Client Registered: ", addr, "\n", end='')
+        self.addrList[addr] = 0
+
+    def IncTime(self):
+        self.addrList = {k: v + 1 for k, v in self.addrList.items()}
+
+    def DelTimeOut(self):
+        newAddrList = {k: v for k, v in self.addrList.items() if v <= self.TTL}
+        # stat timeout addrlist
+        diff = [k for k in self.addrList.keys() if k not in newAddrList.keys()]
+        if len(diff) != 0:
+            print("Client Timeout: ", diff, '\n', end='')
+        self.addrList = newAddrList
+
+    def Timer(self):
+        print("Start Timer....\n", end='')
+        count = 0
+        while not self.terminated:
+            if count % 5 == 0:
+                print("Running....\n", end='')
+            sleep(1)
+            self.DelTimeOut()
+            self.IncTime()
+            count += 1
+            count %= 5
+        print("Timer Stopped....\n", end='')
+
+    def Terminate(self):
+        print("Terminating Server....\n", end='')
+        self.terminated = True
+        self.registrationThread.join()
+        self.forwardThread.join()
+        self.timerThread.join()
+        self.inSock.close()
+        self.outSock.close()
+        print("Server Terminated....\n", end='')

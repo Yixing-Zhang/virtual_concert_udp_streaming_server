@@ -1,47 +1,103 @@
 #! /usr/bin/env python
 from socket import *
-import thread
+import threading
 from time import sleep
 from sys import argv
 import getopt
-
-sock = socket(AF_INET, SOCK_DGRAM)
-lo = socket(AF_INET, SOCK_DGRAM)
-pktlen = 2048
+import select
 
 
-def forward(lo_addr):
-    while True:
-        data, addr = sock.recvfrom(pktlen)
-        lo.sendto(data, lo_addr)
-    sock.close()
-    lo.close()
+class RegistrationClient:
+    """
+    This class controls client.
+    This is a singleton class.
+    """
 
+    __species = None
+    __first_init = True
 
-def beat(forward_addr):
-    while True:
-        sock.sendto("access", forward_addr)
-        print "Access Forward Server..."
-        sleep(10)
+    # UDP Networking
+    localHost = '127.0.0.1'
+    remoteIP = "16.162.92.84"
+    pktLen = 2048
 
+    # Ports
+    remotePort = 1235
+    localInPort = 1236
+    localOutPort = 14043
 
-def usage():
-    print "usage:"
-    print "\t%s RemoteIP RemotePort LocalPort" % (argv[0])
-    exit()
+    # Sockets
+    remoteSock = socket(AF_INET, SOCK_DGRAM)
+    localSock = socket(AF_INET, SOCK_DGRAM)
 
+    # Threads
+    accessThread = None
+    forwardThread = None
 
-def main():
-    if len(argv) != 4:
-        usage()
-    remote = (argv[1], int(argv[2]))
-    print "Forward Streaming Server: ", remote
-    local = ('127.0.0.1', int(argv[3]))
-    print "Local Client: ", local
-    sock.sendto("access", remote)
-    thread.start_new(beat, (remote,))
-    forward(local)
+    # Flags
+    terminated = False
 
+    def __new__(cls, *args, **kwargs):
+        if cls.__species is None:
+            cls.__species = object.__new__(cls)
+        return cls.__species
 
-if __name__ == "__main__":
-    main()
+    def __init__(self, host='127.0.0.1', remoteIP="16.162.92.84", pktLen=2048, remotePort=1235, localInPort=1236,
+                 localOutPort=14043):
+        if self.__first_init:
+            self.localHost = host
+            self.remoteIP = remoteIP
+            self.pktLen = pktLen
+
+            self.remotePort = remotePort
+            self.localInPort = localInPort
+            self.localOutPort = localOutPort
+
+            self.remoteSock = socket(AF_INET, SOCK_DGRAM)
+            self.remoteSock.bind((self.localHost, self.localInPort))
+
+            self.localSock = socket(AF_INET, SOCK_DGRAM)
+            self.localSock.bind((self.localHost, self.localOutPort))
+
+            self.accessThread = threading.Thread(target=self.Access)
+            self.forwardThread = threading.Thread(target=self.Forward)
+
+            self.terminated = False
+
+            self.__class__.__first_init = False
+
+    def Start(self):
+        print("Starting Registration Client...")
+        self.accessThread.start()
+        self.forwardThread.start()
+        print("Registration Client Started...")
+
+    def Forward(self):
+        print("Start Forwarding...\n", end='')
+        while not self.terminated:
+            ready = select.select([self.remoteSock], [], [], 1.0)
+            if ready[0]:
+                data, addr = self.remoteSock.recvfrom(self.pktLen)
+                self.localSock.sendto(data, (self.localHost, self.localOutPort))
+        print("Forwarding Stopped...\n", end='')
+
+    def Access(self):
+        count = 0
+        print("Start Accessing Forward Server...\n", end='')
+        while not self.terminated:
+            if count % 10 == 0:
+                self.remoteSock.sendto("access".encode(), (self.remoteIP, self.remotePort))
+                print("Access Forward Server...\n", end='')
+            count += 1
+            count %= 10
+            sleep(1)
+        print("Stop Accessing Forward Server...\n", end='')
+
+    def Terminated(self):
+        print("Terminating Registration Client....\n", end='')
+        self.terminated = True
+        self.accessThread.join()
+        self.forwardThread.join()
+        self.remoteSock.close()
+        self.localSock.close()
+        print("Registration Client Terminated....\n", end='')
