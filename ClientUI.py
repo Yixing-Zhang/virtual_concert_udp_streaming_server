@@ -8,7 +8,7 @@ class Form(QDialog):
         super(Form, self).__init__(parent)
         layout = QVBoxLayout()
         self.resize(500, 200)
-        self.setWindowTitle("Sever")
+        self.setWindowTitle("Registration Client")
 
         self.client = RegistrationClient.RegistrationClient(remoteIP="127.0.0.1")
         self.client.Start()

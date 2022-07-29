@@ -8,7 +8,7 @@ class Form(QDialog):
         super(Form, self).__init__(parent)
         layout = QVBoxLayout()
         self.resize(500, 200)
-        self.setWindowTitle("Sever")
+        self.setWindowTitle("Forwarding Sever")
 
         self.server = ForwardServer.ForwardServer()
         self.server.Start()

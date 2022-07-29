@@ -24,7 +24,8 @@ class RegistrationClient:
     # Ports
     remotePort = 1235
     localInPort = 1236
-    localOutPort = 14043
+    localOutPort = 1237
+    clientPort = 14043
 
     # Sockets
     remoteSock = socket(AF_INET, SOCK_DGRAM)
@@ -43,7 +44,7 @@ class RegistrationClient:
         return cls.__species
 
     def __init__(self, host='127.0.0.1', remoteIP="16.162.92.84", pktLen=2048, remotePort=1235, localInPort=1236,
-                 localOutPort=14043):
+                 localOutPort=1237, clientPort=14043):
         if self.__first_init:
             self.localHost = host
             self.remoteIP = remoteIP
@@ -52,6 +53,7 @@ class RegistrationClient:
             self.remotePort = remotePort
             self.localInPort = localInPort
             self.localOutPort = localOutPort
+            self.clientPort = clientPort
 
             self.remoteSock = socket(AF_INET, SOCK_DGRAM)
             self.remoteSock.bind((self.localHost, self.localInPort))
@@ -78,18 +80,20 @@ class RegistrationClient:
             ready = select.select([self.remoteSock], [], [], 1.0)
             if ready[0]:
                 data, addr = self.remoteSock.recvfrom(self.pktLen)
-                self.localSock.sendto(data, (self.localHost, self.localOutPort))
+                print("Received data from", addr, ":", data, "\n", end='')
+                self.localSock.sendto(data, (self.localHost, self.clientPort))
+                print("Forwarded the data to", self.localHost, self.clientPort, "\n", end='')
         print("Forwarding Stopped...\n", end='')
 
     def Access(self):
         count = 0
         print("Start Accessing Forward Server...\n", end='')
         while not self.terminated:
-            if count % 10 == 0:
+            if count % 5 == 0:
                 self.remoteSock.sendto("access".encode(), (self.remoteIP, self.remotePort))
                 print("Access Forward Server...\n", end='')
             count += 1
-            count %= 10
+            count %= 5
             sleep(1)
         print("Stop Accessing Forward Server...\n", end='')
 
