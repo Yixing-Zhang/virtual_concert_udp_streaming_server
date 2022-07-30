@@ -97,7 +97,7 @@ class RegistrationClient:
             sleep(1)
         print("Stop Accessing Forward Server...\n", end='')
 
-    def Terminated(self):
+    def Terminate(self):
         print("Terminating Registration Client....\n", end='')
         self.terminated = True
         self.accessThread.join()

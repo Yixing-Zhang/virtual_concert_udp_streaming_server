@@ -3,9 +3,9 @@ from PyQt5.QtWidgets import *
 import ForwardServer
 
 
-class Form(QDialog):
+class ServerUI(QDialog):
     def __init__(self, parent=None):
-        super(Form, self).__init__(parent)
+        super(ServerUI, self).__init__(parent)
         layout = QVBoxLayout()
         self.resize(500, 200)
         self.setWindowTitle("Forwarding Sever")
@@ -27,6 +27,6 @@ class Form(QDialog):
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
-    btnDemo = Form()
+    btnDemo = ServerUI()
     btnDemo.show()
     sys.exit(app.exec_())

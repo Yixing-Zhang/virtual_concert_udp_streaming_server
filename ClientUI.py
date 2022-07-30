@@ -3,14 +3,14 @@ from PyQt5.QtWidgets import *
 import RegistrationClient
 
 
-class Form(QDialog):
+class ClientUI(QDialog):
     def __init__(self, parent=None):
-        super(Form, self).__init__(parent)
+        super(ClientUI, self).__init__(parent)
         layout = QVBoxLayout()
         self.resize(500, 200)
         self.setWindowTitle("Registration Client")
 
-        self.client = RegistrationClient.RegistrationClient(remoteIP="127.0.0.1")
+        self.client = RegistrationClient.RegistrationClient()
         self.client.Start()
 
         self.btn1 = QPushButton("Terminate")
@@ -21,12 +21,12 @@ class Form(QDialog):
 
     def whichBtn(self, btn):
         if btn.text() == 'Terminate':
-            self.server.Terminate()
+            self.client.Terminate()
             self.close()
 
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
-    btnDemo = Form()
+    btnDemo = ClientUI()
     btnDemo.show()
     sys.exit(app.exec_())
