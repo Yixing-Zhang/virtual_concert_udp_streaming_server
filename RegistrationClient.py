@@ -19,7 +19,7 @@ class RegistrationClient:
     # UDP Networking
     localHost = '127.0.0.1'
     remoteIP = "16.162.92.84"
-    pktLen = 2048
+    pktLen = 8192
 
     # Ports
     remotePort = 1235
@@ -43,7 +43,7 @@ class RegistrationClient:
             cls.__species = object.__new__(cls)
         return cls.__species
 
-    def __init__(self, host='127.0.0.1', remoteIP="16.162.92.84", pktLen=2048, remotePort=1235, localInPort=1236,
+    def __init__(self, host='127.0.0.1', remoteIP="16.162.92.84", pktLen=8192, remotePort=1235, localInPort=1236,
                  localOutPort=1237, clientPort=14043):
         if self.__first_init:
             self.localHost = host

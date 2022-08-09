@@ -16,7 +16,7 @@ class ForwardServer:
     # UDP Networking
     host = '0.0.0.0'
     TTL = 20
-    pktLen = 2048
+    pktLen = 8192
 
     # Ports
     inPort = 1234
@@ -42,7 +42,7 @@ class ForwardServer:
             cls.__species = object.__new__(cls)
         return cls.__species
 
-    def __init__(self, host='0.0.0.0', TTL=20, pktLen=2048, inPort=1234, outPort=1235):
+    def __init__(self, host='0.0.0.0', TTL=20, pktLen=8192, inPort=1234, outPort=1235):
         if self.__first_init:
             self.host = host
             self.TTL = TTL
