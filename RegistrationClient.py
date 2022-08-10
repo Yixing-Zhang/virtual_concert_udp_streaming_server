@@ -23,7 +23,6 @@ class RegistrationClient:
 
     # Ports
     remotePort = 1235
-    localInPort = 1236
     localOutPort = 1237
     clientPort = 14043
 
@@ -43,7 +42,7 @@ class RegistrationClient:
             cls.__species = object.__new__(cls)
         return cls.__species
 
-    def __init__(self, host='127.0.0.1', remoteIP='18.167.110.29', pktLen=8192, remotePort=1235, localInPort=1236,
+    def __init__(self, host='127.0.0.1', remoteIP='18.167.110.29', pktLen=8192, remotePort=1235,
                  localOutPort=1237, clientPort=14043):
         if self.__first_init:
             self.localHost = host
@@ -51,12 +50,10 @@ class RegistrationClient:
             self.pktLen = pktLen
 
             self.remotePort = remotePort
-            self.localInPort = localInPort
             self.localOutPort = localOutPort
             self.clientPort = clientPort
 
             self.remoteSock = socket(AF_INET, SOCK_DGRAM)
-            self.remoteSock.bind((self.localHost, self.localInPort))
 
             self.localSock = socket(AF_INET, SOCK_DGRAM)
             self.localSock.bind((self.localHost, self.localOutPort))
@@ -80,9 +77,9 @@ class RegistrationClient:
             ready = select.select([self.remoteSock], [], [], 1.0)
             if ready[0]:
                 data, addr = self.remoteSock.recvfrom(self.pktLen)
-                print("Received data from", addr, ":", data, "\n", end='')
+                # print("Received data from", addr, ":", data, "\n", end='')
                 self.localSock.sendto(data, (self.localHost, self.clientPort))
-                print("Forwarded the data to", self.localHost, self.clientPort, "\n", end='')
+                # print("Forwarded the data to", self.localHost, self.clientPort, "\n", end='')
         print("Forwarding Stopped...\n", end='')
 
     def Access(self):
