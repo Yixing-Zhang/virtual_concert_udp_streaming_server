@@ -80,10 +80,10 @@ class ForwardServer:
             ready = select.select([self.inSock], [], [], 1.0)
             if ready[0]:
                 data, inAddr = self.inSock.recvfrom(self.pktLen)
-                print("Received data from", inAddr, ":", data, "\n", end='')
+                # print("Received data from", inAddr, ":", data, "\n", end='')
                 for addr in self.addrList.keys():
                     self.outSock.sendto(data, addr)
-                    print("Forwarded the data to", addr, "\n", end='')
+                    # print("Forwarded the data to", addr, "\n", end='')
         print("Forward Stopped....\n", end='')
 
     def AcceptRegistration(self):
